@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## 2022-05-XX
+### Added
+- `dotnet new react` | `dotnet new`
+- dotnet `Amazon.Lambda`
+- CloudFormation Template
+
 ## 2022-05-10
 ### Added
 - GitPod config 

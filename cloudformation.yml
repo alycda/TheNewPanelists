@@ -1,0 +1,169 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: A .NET app running on Lambda with API Gateway and S3 Website Hosting
+
+Metadata:
+  Buckets:
+    Description: "Static site hosting for UI"
+
+Parameters:
+  ClientParameter:
+    Type: String
+  UIBucketName:
+    Type: String
+    Default: motomoto-ui
+  CodeBucketName:
+    Type: String
+    Default: motomoto-code
+
+# Rules:
+
+# Mappings:
+
+# Conditions:
+
+# Transform:
+
+Resources:
+# TODO: Route53
+# TODO: CloudFront
+
+  StaticWebsite:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      AccessControl: PublicRead
+      BucketName: !Ref UIBucketName
+
+      # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket-cors.html#cfn-s3-bucket-cors-corsrule
+      # CorsConfiguration:
+
+      Tags:
+      - Key: client
+        Value: !Ref ClientParameter
+
+      WebsiteConfiguration:
+        ErrorDocument: index.html
+        IndexDocument: index.html
+        RoutingRules: 
+          - RoutingRuleCondition:
+              KeyPrefixEquals: weatherforecast
+            RedirectRule:
+              HostName: !Ref ApplicationUrl
+              Protocol: https
+              
+    DeletionPolicy: Retain
+
+  StaticWebsitePolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref UIBucketName
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Action:
+          - 's3:GetObject'
+          Effect: Allow
+          Resource: !Join
+            - ''
+            - - 'arn:aws:s3:::'
+              - !Ref UIBucketName
+              - /*
+          Principal: '*'
+
+  CodeBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      # AccessControl:
+      BucketName: !Ref CodeBucketName
+
+      Tags:
+      - Key: client
+        Value: !Ref ClientParameter
+
+    DeletionPolicy: Retain
+
+  ServiceRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: '*'
+                Resource: '*'
+      Tags:
+      - Key: client
+        Value: !Ref ClientParameter
+
+# TODO: Database  
+
+  # micro-service, application
+  Application:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      # FunctionName: 
+      # Handler:
+      Runtime: "dotnet6"
+      Code:
+        S3Bucket: !Ref CodeBucketName
+        S3Key: code.zip
+      # Role:
+      Tags:
+      - Key: client
+        Value: !Ref ClientParameter
+
+# https://docs.aws.amazon.com/lambda/latest/dg/urls-tutorial.html
+  ApplicationUrl:
+    Type: "AWS::Lambda::Url"
+    Properties:
+      AuthType: NONE
+      TargetFunctionArn: !Ref Application
+      Cors:
+        AllowMethods: 
+          - Get
+        AllowOrigins: 
+          - http://motomoto-ui.s3-website-us-west-1.amazonaws.com
+        # MaxAge: Integer
+
+  AppLogsGroup:
+    Type: "AWS::Logs::LogGroup"
+    Properties: 
+      LogGroupName: String
+      # RetentionInDays: 5
+      Tags:
+      - Key: client
+        Value: !Ref ClientParameter
+
+  AppLogsStream:
+    Type: "AWS::Logs::LogStream"
+    Properties: 
+      LogGroupName: String
+      LogStreamName: String
+
+Outputs:
+  WebsiteURL:
+    Value: !GetAtt
+      - S3Bucket
+      - WebsiteURL
+    Description: URL for website hosted on S3
+  S3BucketSecureURL:
+    Value: !Join
+      - ''
+      - - 'https://'
+        - !GetAtt
+          - S3Bucket
+          - DomainName
+    Description: Name of S3 bucket to hold website content
+  
