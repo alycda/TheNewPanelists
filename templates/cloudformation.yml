@@ -1,0 +1,26 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: A .NET app running on Lambda with API Gateway and S3 Website Hosting
+
+Parameters:
+  ClientParameter:
+    Type: String
+  UIBucketName:
+    Type: String
+    Default: motomoto-ui
+  CodeBucketName:
+    Type: String
+    Default: motomoto-code
+
+Resources:
+  CodeBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      # AccessControl:
+      BucketName: !Ref CodeBucketName
+
+      Tags:
+      - Key: client
+        Value: !Ref ClientParameter
+
+    DeletionPolicy: Retain
