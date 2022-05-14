@@ -7,9 +7,10 @@
 - `dotnet new react` | `dotnet new`
 - dotnet `Amazon.Lambda`
 - CloudFormation Template
+  + with tests
 
 ## 2022-05-10
 ### Added
-- GitPod config 
+- GitPod config
   + dotnet fix: https://github.com/gitpod-io/gitpod/issues/8901
   + awscli
